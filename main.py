@@ -6,10 +6,12 @@ pip install imageio-ffmpeg
 
 from moviepy.editor import *
 from classes_function import *
+import random
 import pygame
 
 
 def generate_level(level):
+    x_m, y_m, rick_x, rick_y, morty_x, morty_y = None, None, None, None, None, None
     for y in range(len(level)):
         for x in range(len(level[y])):
             if level[y][x] == '.':
@@ -18,14 +20,18 @@ def generate_level(level):
                 Tile('image/cub.jpg', x, y, all_sprites, cub)
             elif level[y][x] == '@':
                 Tile('image/green.jpg', x, y, all_sprites)
-                hero_x, hero_y = x, y
+                morty_x, morty_y = x, y
+            elif level[y][x] == '0':
+                Tile('image/green.jpg', x, y, all_sprites)
+                rick_x, rick_y = x, y
             else:
                 Tile('image/green.jpg', x, y, all_sprites)
                 x_m, y_m = x, y
 
-    Sprite(x_m * 180, y_m * 180, pygame.transform.scale(load_image("image/mistic.png"), (180, 180)), all_sprites, other)
+    Sprite(x_m, y_m, "image/mistic.png", all_sprites, other)
 
-    return AnimatedSprite(rick[1:], morty[1:], 4, 1, hero_x * 180, hero_y * 180, all_sprites)
+    return [AnimatedSprite(rick[1:], 4, 1, rick_x, rick_y, all_sprites),
+            AnimatedSprite(morty[1:], 4, 1, morty_x, morty_y, all_sprites)]
 
 
 pygame.display.set_caption("Rick's and Morty's games")
@@ -113,13 +119,15 @@ cat_scen("image/fon2.png", load_text("replics.txt"), screen, rick[0], morty[0], 
 
 screen.fill((0, 0, 0))
 camera = Camera()
+count = 180
 clock = pygame.time.Clock()
 all_sprites = pygame.sprite.Group()
 other = pygame.sprite.Group()
 cub = pygame.sprite.Group()
 music = pygame.mixer.music.load('data/music/do_you_feel_it.mp3')
 pygame.mixer.music.play(-1, 0.0)
-player = generate_level(load_level('level.txt'))
+rick_hero, morty_hero = generate_level(load_level('level.txt'))
+player = rick_hero
 
 
 class Particle(pygame.sprite.Sprite):
@@ -154,7 +162,7 @@ def create_particles(position):
 def game_over():
     fon = create_simple_sprite('image/gamepver.jpg', -1300, 0, True, (1300, 700))
     all_sprites.add(fon)
-    music = pygame.mixer.music.load("data/music/glavnaya-tema-iz-8-bitnoy-igry-mortal-kombat.mp3")
+    music = pygame.mixer.music.load("data/music/roots.wav")
     pygame.mixer.music.play(-1, 0.0)
     update = False
     running = True
@@ -182,6 +190,18 @@ def game_over():
         clock.tick(60)
 
 
+def transform():
+    for i in all_sprites:
+        try:
+            i.image = pygame.transform.scale(i.name_image, (count, count))
+        except Exception:
+            i.scale = count
+            for j in range(len(i.frames_normal)):
+                i.frames[j] = pygame.transform.scale(i.frames_normal[j], (count, count))
+            i.image = pygame.transform.scale(i.image_normal, (count, count))
+        i.rect = i.image.get_rect().move(i.pos_x * count, i.pos_y * count)
+
+
 while running:
     screen.fill((255, 255, 255))
     for event in pygame.event.get():
@@ -202,7 +222,7 @@ while running:
                 player.vy = -20
 
             if event.key == pygame.K_ESCAPE:
-                menu = Menu(300, 150, {"CONTINUE": False, "QUIT": terminate}, screen, 'data/music/head_bent_over.mp3',
+                menu = Menu(300, 150, {"CONTINUE": False, "QUIT": terminate}, screen, 'data/music/Thunder.wav',
                             False)
 
                 way = menu.draw_menu()
@@ -218,13 +238,21 @@ while running:
                     terminate()
 
             if event.key == pygame.K_SPACE:
-                player.change_hero()
+                player = morty_hero if player != morty_hero else rick_hero
 
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_RIGHT or event.key == pygame.K_LEFT:
                 player.vx = 0
             if event.key == pygame.K_DOWN or event.key == pygame.K_UP:
                 player.vy = 0
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 5:
+                count = min(count + 5, 200)
+                transform()
+            elif event.button == 4:
+                count = max(count - 5, 50)
+                transform()
 
     all_sprites.update(cub)
     camera.update(player)

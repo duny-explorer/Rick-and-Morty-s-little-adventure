@@ -2,7 +2,6 @@ import sys
 import pygame
 import os
 
-
 name = 'star.png'
 pygame.init()
 
@@ -63,6 +62,9 @@ def terminate():
 class Tile(pygame.sprite.Sprite):
     def __init__(self, tile_type, pos_x, pos_y, *group):
         super().__init__(*group)
+        self.pos_x = pos_x
+        self.pos_y = pos_y
+        self.name_image = load_image(tile_type)
         self.image = pygame.transform.scale(load_image(tile_type), (180, 180))
         self.rect = self.image.get_rect().move(
             180 * pos_x, 180 * pos_y)
@@ -71,28 +73,34 @@ class Tile(pygame.sprite.Sprite):
 class Sprite(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y, image, *group):
         super().__init__(*group)
-        self.image = image
+        self.image = pygame.transform.scale(load_image(image), (180, 180))
+        self.pos_x = pos_x
+        self.pos_y = pos_y
+        self.name_image = load_image(image)
         self.rect = self.image.get_rect().move(pos_x, pos_y)
 
 
 class AnimatedSprite(pygame.sprite.Sprite):
-    def __init__(self, sheet, sheet2, columns, rows, x, y, *group):
+    def __init__(self, sheet, columns, rows, x, y, *group):
         super().__init__(*group)
         self.frames = []
-        self.who = 0
         self.columns = columns
         self.rows = rows
-        self.sheets = [sheet, sheet2]
-        self.cut_sheet(self.sheets[self.who % 2][0], columns, rows)
-        self.cut_sheet(self.sheets[self.who % 2][1], columns, rows)
-        self.cut_sheet(self.sheets[self.who % 2][2], columns, rows)
+        self.cut_sheet(sheet[0], columns, rows)
+        self.cut_sheet(sheet[1], columns, rows)
+        self.cut_sheet(sheet[2], columns, rows)
         self.cur_frame = 0
-        self.x = x
-        self.y = y
+        self.pos_x = x
+        self.pos_y = y
+        self.scale = 180
         self.vy = 0
         self.vx = 0
+        self.frames_normal = self.frames[:]
+        self.image_normal = self.frames[self.cur_frame]
+        for i in range(len(self.frames)):
+            self.frames[i] = pygame.transform.scale(self.frames[i], (180, 180))
         self.image = self.frames[self.cur_frame]
-        self.rect = self.rect.move(x, y)
+        self.rect = self.rect.move(x * 180, y * 180)
 
     def cut_sheet(self, sheet, columns, rows):
         self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
@@ -100,35 +108,36 @@ class AnimatedSprite(pygame.sprite.Sprite):
         for j in range(rows):
             for i in range(columns):
                 frame_location = (self.rect.w * i, self.rect.h * j)
-                self.frames.append(pygame.transform.scale(sheet.subsurface(pygame.Rect(
-                    frame_location, self.rect.size)), (180, 180)))
+                self.frames.append(sheet.subsurface(pygame.Rect(
+                    frame_location, self.rect.size)))
 
     def update(self, cub=None):
         if self.vx != 0:
             self.rect = self.rect.move(self.vx, 0)
+            self.pos_x += self.vx / self.scale
             self.cur_frame = (self.cur_frame + 1) % len(self.frames)
-            self.image = self.frames[0:4][self.cur_frame % 4] if self.vx < 0 else\
-                pygame.transform.flip(self.frames[0:4][self.cur_frame % 4], True, False)
+            self.image = self.frames[0:4][self.cur_frame % 4] if self.vx < 0 else \
+                pygame.transform.flip(self.frames[0:4][self.cur_frame % 4], True,
+                                      False)
+            self.image_normal = self.frames_normal[0:4][self.cur_frame % 4] if self.vx < 0 else \
+                pygame.transform.flip(self.frames[0:4][self.cur_frame % 4], True,
+                                      False)
         elif self.vy != 0:
+            self.pos_y += self.vy / self.scale
             self.cur_frame = (self.cur_frame + 1) % len(self.frames)
             self.image = self.frames[4:8][self.cur_frame % 4] if self.vy < 0 else \
-                pygame.transform.flip(self.frames[8:][self.cur_frame % 4], True, False)
+                pygame.transform.flip(self.frames[8:][self.cur_frame % 4], True,
+                                      False)
+            self.image_normal = self.frames_normal[0:4][self.cur_frame % 4] if self.vx < 0 else \
+                pygame.transform.flip(self.frames[0:4][self.cur_frame % 4], True,
+                                      False)
             self.rect = self.rect.move(0, self.vy)
 
         if pygame.sprite.spritecollideany(self, cub):
             self.rect = self.rect.move(0, -self.vy)
             self.rect = self.rect.move(-self.vx, 0)
-
-    def change_hero(self):
-        self.who += 1
-        self.frames = []
-        self.cut_sheet(self.sheets[self.who % 2][0], self.columns, self.rows)
-        self.cut_sheet(self.sheets[self.who % 2][1], self.columns, self.rows)
-        self.cut_sheet(self.sheets[self.who % 2][2], self.columns, self.rows)
-        self.cur_frame = 0
-        self.image = self.frames[self.cur_frame]
-        self.rect = self.rect.move(-(self.rect.x + self.rect.w // 2 - 1300 // 2),
-                                   -(self.rect.y + self.rect.h // 2 - 700 // 2))
+            self.pos_x += -self.vx / self.scale
+            self.pos_y += -self.vy / self.scale
 
 
 class Player:
@@ -247,7 +256,7 @@ def cat_scen(fon_name, text, screen, rick, morty, music):
 
 def choice(fon_name, variants, screen, music, x, y):
     class ChoiceItem(pygame.sprite.Sprite):
-        def __init__(self, pos_x, pos_y,  image):
+        def __init__(self, pos_x, pos_y, image):
             super().__init__(all_sprites)
             self.image = image
             self.pos_x = pos_x
