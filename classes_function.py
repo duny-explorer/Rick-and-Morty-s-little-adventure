@@ -81,11 +81,12 @@ class Sprite(pygame.sprite.Sprite):
 
 
 class AnimatedSprite(pygame.sprite.Sprite):
-    def __init__(self, sheet, columns, rows, x, y, *group):
+    def __init__(self, sheet, columns, rows, x, y, sound,  *group):
         super().__init__(*group)
         self.frames = []
         self.columns = columns
         self.rows = rows
+        self.sound = sound
         self.cut_sheet(sheet[0], columns, rows)
         self.cut_sheet(sheet[1], columns, rows)
         self.cut_sheet(sheet[2], columns, rows)
@@ -139,6 +140,10 @@ class AnimatedSprite(pygame.sprite.Sprite):
             self.pos_x += -self.vx / self.scale
             self.pos_y += -self.vy / self.scale
 
+    def get_event(self, event):
+        if self.rect.collidepoint(event.pos):
+            pygame.mixer.Sound(self.sound).play()
+
 
 class Player:
     def __init__(self, sprite, health, lucky, protect, money):
@@ -171,7 +176,7 @@ class Menu:
     def draw_menu(self):
         menu = True
         clock = pygame.time.Clock()
-        music = pygame.mixer.music.load(self.music)
+        pygame.mixer.music.load(self.music)
         pygame.mixer.music.play(-1, 0.0)
         while menu:
             for event in pygame.event.get():
@@ -226,15 +231,15 @@ class Camera:
 
 def cat_scen(fon_name, text, screen, rick, morty, music):
     select = 0
-    fon = create_simple_sprite(fon_name, 0, 0, True, (1300, 700))
-    rick = create_simple_sprite(rick, -60, 0)
+    fon = create_simple_sprite(fon_name, 0, 0, True, (1300, 750))
+    rick = create_simple_sprite(rick, -60, 20)
     morty = create_simple_sprite(morty, 1000, 100)
     all_sprites = pygame.sprite.Group()
     all_sprites.add(fon)
     all_sprites.add(rick)
     all_sprites.add(morty)
 
-    music = pygame.mixer.music.load(music)
+    pygame.mixer.music.load(music)
     pygame.mixer.music.play(-1, 0.0)
 
     running = True
@@ -250,7 +255,7 @@ def cat_scen(fon_name, text, screen, rick, morty, music):
 
         all_sprites.draw(screen)
         screen.blit(text_format(text[min(select, len(text) - 1)].rstrip(), "data/font/font1.ttf",
-                                35, (0, 0, 0)), (300, 500))
+                                35, (0, 0, 0)), (300, 550))
         pygame.display.flip()
 
 
@@ -277,7 +282,7 @@ def choice(fon_name, variants, screen, music, x, y):
     all_sprites.add(fon)
     ChoiceItem(x, y, load_image(variants[0][0]))
 
-    music = pygame.mixer.music.load(music)
+    pygame.mixer.music.load(music)
     pygame.mixer.music.play(-1, 0.0)
     text = load_text(variants[select][1])
 

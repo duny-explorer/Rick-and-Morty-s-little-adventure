@@ -30,8 +30,8 @@ def generate_level(level):
 
     Sprite(x_m, y_m, "image/mistic.png", all_sprites, other)
 
-    return [AnimatedSprite(rick[1:], 4, 1, rick_x, rick_y, all_sprites),
-            AnimatedSprite(morty[1:], 4, 1, morty_x, morty_y, all_sprites)]
+    return [AnimatedSprite(rick[1:], 4, 1, rick_x, rick_y, "data/music/rick.wav", all_sprites),
+            AnimatedSprite(morty[1:], 4, 1, morty_x, morty_y, "data/music/morty.wav", all_sprites)]
 
 
 pygame.display.set_caption("Rick's and Morty's games")
@@ -124,8 +124,9 @@ clock = pygame.time.Clock()
 all_sprites = pygame.sprite.Group()
 other = pygame.sprite.Group()
 cub = pygame.sprite.Group()
-music = pygame.mixer.music.load('data/music/do_you_feel_it.mp3')
+pygame.mixer.music.load('data/music/do_you_feel_it.mp3')
 pygame.mixer.music.play(-1, 0.0)
+pygame.mixer.music.set_volume(0.5)
 rick_hero, morty_hero = generate_level(load_level('level.txt'))
 player = rick_hero
 
@@ -160,9 +161,9 @@ def create_particles(position):
 
 
 def game_over():
-    fon = create_simple_sprite('image/gamepver.jpg', -1300, 0, True, (1300, 700))
+    fon = create_simple_sprite('image/gamepver.png', -1300, 0, True, (1300, 750))
     all_sprites.add(fon)
-    music = pygame.mixer.music.load("data/music/roots.wav")
+    pygame.mixer.music.load("data/music/roots.wav")
     pygame.mixer.music.play(-1, 0.0)
     update = False
     running = True
@@ -229,7 +230,7 @@ while running:
                 if way:
                     way()
 
-                music = pygame.mixer.music.load('data/music/do_you_feel_it.mp3')
+                pygame.mixer.music.load('data/music/do_you_feel_it.mp3')
                 pygame.mixer.music.play(-1, 0.0)
 
             if event.key == pygame.K_RETURN:
@@ -251,8 +252,11 @@ while running:
                 count = min(count + 5, 200)
                 transform()
             elif event.button == 4:
-                count = max(count - 5, 50)
+                count = max(count - 5, 90)
                 transform()
+            elif event.button == 1:
+                rick_hero.get_event(event)
+                morty_hero.get_event(event)
 
     all_sprites.update(cub)
     camera.update(player)
